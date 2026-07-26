@@ -3,9 +3,6 @@ import pandas as pd
 import joblib
 import streamlit as st
 
-# -----------------------------------------------------------------------------
-# 1. Page Configuration & Custom CSS Setup
-# -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Wellness Tourism Predictor",
     page_icon="✈️",
@@ -44,9 +41,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# -----------------------------------------------------------------------------
-# 2. Model Loading
-# -----------------------------------------------------------------------------
+# Load and cache the model
 @st.cache_resource
 def load_model():
     model_path = os.path.join(
@@ -60,12 +55,10 @@ except Exception as e:
     st.error(f"⚠️ Failed to load model file. Ensure model file is in directory. Error: {e}")
     st.stop()
 
-# -----------------------------------------------------------------------------
-# 3. Sidebar Header & Info
-# -----------------------------------------------------------------------------
+# Sidebar
 with st.sidebar:
     st.image(
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
+        "https://unsplash.com/photos/brown-wooden-dock-on-blue-sea-under-blue-and-white-cloudy-sky-during-daytime-zyOeEm4NsPM",
         caption="Wellness Tourism Intelligence",
         use_container_width=True,
     )
@@ -81,18 +74,14 @@ with st.sidebar:
         """
     )
     st.divider()
-    st.caption("v1.2.0 • Sales Intelligence System")
+    st.caption("v1.0.0 • Sales Intelligence System")
 
-# -----------------------------------------------------------------------------
-# 4. Main Header
-# -----------------------------------------------------------------------------
+# Main Header
 st.title("✈️ Tourism Purchase Prediction")
 st.markdown("##### Pre-evaluate customer lead propensity for the **Wellness Tourism Package**")
 st.write("---")
 
-# -----------------------------------------------------------------------------
-# 5. Tabbed Data Input Form
-# -----------------------------------------------------------------------------
+# Form to be submitted for prediction
 with st.form("prediction_form"):
     tab1, tab2, tab3 = st.tabs([
         "👤 Customer Demographics", 
@@ -123,7 +112,7 @@ with st.form("prediction_form"):
         t1, t2, t3 = st.columns(3)
         with t1:
             num_trips = st.number_input("Annual Trips Taken", min_value=0, max_value=20, value=3)
-            preferred_star = st.radio("Preferred Hotel Rating", [3, 4, 5], horizontal=True)
+            preferred_star = st.radio("Preferred Hotel Rating", [1, 2, 3, 4, 5], horizontal=True)
             
         with t2:
             num_visitors = st.number_input("Total Visitors in Group", min_value=1, max_value=10, value=2)
@@ -149,11 +138,9 @@ with st.form("prediction_form"):
             num_followups = st.selectbox("Number of Follow-ups Made", [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], index=3)
 
     st.write("---")
-    submit_button = st.form_submit_button("⚡ Run Purchase Prediction", use_container_width=True, type="primary")
+    submit_button = st.form_submit_button("Run Purchase Prediction", use_container_width=True, type="primary")
 
-# -----------------------------------------------------------------------------
-# 6. Prediction Logic & Visual Results
-# -----------------------------------------------------------------------------
+# Prediction
 if submit_button:
     # Value conversions
     passport_val = 1 if passport == "Yes" else 0
@@ -184,7 +171,7 @@ if submit_button:
         ]
     )
 
-    st.markdown("### 📊 Assessment Summary")
+    st.markdown("### Assessment Results")
     
     # Process prediction
     prediction = model.predict(input_data)[0]
@@ -197,17 +184,16 @@ if submit_button:
 
     with r1:
         if prediction == 1:
-            st.success("🎉 **HIGH PROPENSITY LEAD**")
+            st.success(":material/local_fire_department: **HIGH PROPENSITY LEAD**")
             if proba is not None:
                 st.metric(label="Purchase Probability", value=f"{proba * 100:.1f}%", delta="High Potential")
         else:
-            st.error("⚠️ **LOW PROPENSITY LEAD**")
+            st.error(":material/ac_unit: **LOW PROPENSITY LEAD**")
             if proba is not None:
                 st.metric(label="Purchase Probability", value=f"{proba * 100:.1f}%", delta="-Low Potential", delta_color="inverse")
 
     with r2:
         if prediction == 1:
-            st.balloons()
             st.markdown(
                 """
                 > **Recommended Action:** Priority lead. Assign a senior account executive and send custom package highlights within 2 hours.
