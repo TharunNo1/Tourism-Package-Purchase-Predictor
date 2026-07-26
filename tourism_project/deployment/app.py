@@ -67,7 +67,7 @@ with st.sidebar:
     st.image(
         "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
         caption="Wellness Tourism Intelligence",
-        use_column_width=True,
+        use_container_width=True,
     )
     st.title("Sales Advisor Assistant")
     st.markdown(
@@ -130,8 +130,8 @@ with st.form("prediction_form"):
             num_children = st.number_input("Children Visiting (< 5 yrs)", min_value=0, max_value=5, value=0)
 
         with t3:
-            passport = st.segmented_control("Has Passport?", ["No", "Yes"], default="Yes")
-            own_car = st.segmented_control("Owns a Car?", ["No", "Yes"], default="Yes")
+            passport = st.segmented_control("Has Passport?", ["No", "Yes"], default="Yes", key="passport_segment")
+            own_car = st.segmented_control("Owns a Car?", ["No", "Yes"], default="Yes", key="car_segment")
 
     # Tab 3: Sales Pitch Info
     with tab3:
