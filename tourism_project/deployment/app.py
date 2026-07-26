@@ -58,7 +58,7 @@ except Exception as e:
 # Sidebar
 with st.sidebar:
     st.image(
-        "https://unsplash.com/photos/brown-wooden-dock-on-blue-sea-under-blue-and-white-cloudy-sky-during-daytime-zyOeEm4NsPM",
+        "http://unsplash.com/photos/man-taking-photo-of-hot-air-balloons-eOcyhe5-9sQ",
         caption="Wellness Tourism Intelligence",
         use_container_width=True,
     )
