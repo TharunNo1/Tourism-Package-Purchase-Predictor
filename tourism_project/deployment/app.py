@@ -1,122 +1,225 @@
-import streamlit as st
 import os
 import pandas as pd
 import joblib
+import streamlit as st
 
-# Download and load the model
-model_path = os.path.join(os.path.dirname(__file__), "best_tourism_purchase_prediction_model_v1.joblib")
-model = joblib.load(model_path)
-
-# Streamlit UI for Tourism Purchase Prediction
-st.title("Tourism Purchase Prediction Application")
-st.write("""
-An interactive, real-time prediction dashboard designed for sales teams to identify 
-high-potential customers for our Wellness Tourism Package before initiating contact.
-""")
-
-st.subheader("Customer Demographics & Profile")
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    age = st.slider("Age", min_value=15, max_value=65, value=30)
-    gender = st.selectbox("Gender", ["Male", "Female", "Fe Male"])
-    marital_status = st.selectbox(
-        "Marital Status", ["Married", "Single", "Unmarried", "Divorced"]
-    )
-    occupation = st.selectbox(
-        "Occupation", ["Salaried", "Small Business", "Large Business", "Free Lancer"]
-    )
-
-with col2:
-    designation = st.selectbox(
-        "Designation", ["Executive", "Manager", "Senior Manager", "AVP", "VP"]
-    )
-    monthly_income = st.number_input(
-        "Monthly Income", min_value=0.0, value=25000.0, step=500.0
-    )
-    city_tier = st.selectbox("City Tier", [1, 2, 3])
-    passport = st.selectbox("Has Passport?", ["Yes", "No"])
-
-with col3:
-    own_car = st.selectbox("Owns a Car?", ["Yes", "No"])
-    num_trips = st.number_input(
-        "Number of Annual Trips", min_value=0, max_value=20, value=3
-    )
-    preferred_star = st.selectbox("Preferred Property Star Rating", [3, 4, 5])
-
-st.subheader("Travel Group Details")
-col4, col5 = st.columns(2)
-with col4:
-    num_visitors = st.number_input(
-        "Total Number of Persons Visiting", min_value=1, max_value=10, value=2
-    )
-with col5:
-    num_children = st.number_input(
-        "Number of Children Visiting (Age < 5)", min_value=0, max_value=5, value=0
-    )
-
-st.subheader("Sales Interaction Details")
-col6, col7, col8 = st.columns(3)
-
-with col6:
-    contact_type = st.selectbox("Type of Contact", ["Self Enquiry", "Company Invited"])
-    product_pitched = st.selectbox(
-        "Product Pitched", ["Basic", "Deluxe", "Standard", "Super Deluxe", "King"]
-    )
-
-with col7:
-    pitch_duration = st.number_input(
-        "Duration of Pitch (Minutes)", min_value=0, max_value=120, value=15
-    )
-    pitch_satisfaction = st.slider(
-        "Pitch Satisfaction Score", min_value=1, max_value=5, value=3
-    )
-
-with col8:
-    num_followups = st.selectbox(
-        "Number of Follow-ups", [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], index=3
-    )
-
-# Mapping binary categorical UI selections back to standard numeric format if expected by the pipeline
-passport_val = 1 if passport == "Yes" else 0
-own_car_val = 1 if own_car == "Yes" else 0
-
-# Assemble input into DataFrame matching the expected schema of your pipeline
-input_data = pd.DataFrame(
-    [
-        {
-            "Age": age,
-            "TypeofContact": contact_type,
-            "CityTier": city_tier,
-            "Occupation": occupation,
-            "Gender": gender,
-            "NumberOfPersonVisiting": num_visitors,
-            "PreferredPropertyStar": preferred_star,
-            "MaritalStatus": marital_status,
-            "NumberOfTrips": num_trips,
-            "Passport": passport_val,
-            "OwnCar": own_car_val,
-            "NumberOfChildrenVisiting": num_children,
-            "Designation": designation,
-            "MonthlyIncome": monthly_income,
-            "PitchSatisfactionScore": pitch_satisfaction,
-            "ProductPitched": product_pitched,
-            "NumberOfFollowups": num_followups,
-            "DurationOfPitch": pitch_duration,
-        }
-    ]
+# -----------------------------------------------------------------------------
+# 1. Page Configuration & Custom CSS Setup
+# -----------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Wellness Tourism Predictor",
+    page_icon="✈️",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# Predict
-if st.button("Predict Purchase Decision"):
-    prediction = model.predict(input_data)[0]
+# Custom Styling (Gradients, Clean Borders, Card Layouts)
+st.markdown(
+    """
+    <style>
+    /* Metric Cards Styling */
+    [data-testid="stMetricValue"] {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    
+    /* Global Container Adjustments */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 6px 6px 0px 0px;
+        padding: 10px 16px;
+        font-weight: 600;
+    }
+    
+    /* Card Container Wrapper */
+    div[data-testid="stForm"] {
+        border: 1px solid #E0E0E0;
+        border-radius: 12px;
+        padding: 20px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-    st.subheader("Prediction Result:")
-    if prediction == 1:
-        st.success(
-            "🎉 **Highly Likely to Purchase!** The model predicts this customer will buy the Wellness Tourism Package."
-        )
-    else:
-        st.info(
-            "⚠️ **Unlikely to Purchase.** The model predicts this customer is not interested at this stage."
-        )
+# -----------------------------------------------------------------------------
+# 2. Model Loading
+# -----------------------------------------------------------------------------
+@st.cache_resource
+def load_model():
+    model_path = os.path.join(
+        os.path.dirname(__file__), "best_tourism_purchase_prediction_model_v1.joblib"
+    )
+    return joblib.load(model_path)
+
+try:
+    model = load_model()
+except Exception as e:
+    st.error(f"⚠️ Failed to load model file. Ensure model file is in directory. Error: {e}")
+    st.stop()
+
+# -----------------------------------------------------------------------------
+# 3. Sidebar Header & Info
+# -----------------------------------------------------------------------------
+with st.sidebar:
+    st.image(
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
+        caption="Wellness Tourism Intelligence",
+        use_column_width=True,
+    )
+    st.title("Sales Advisor Assistant")
+    st.markdown(
+        """
+        Use this predictor before sales calls to gauge lead propensity and customize your sales approach.
+        
+        ---
+        **Quick Tips:**
+        - Ensure accurate **Monthly Income**.
+        - Ensure **Pitch Duration** reflects real call time.
+        """
+    )
+    st.divider()
+    st.caption("v1.2.0 • Sales Intelligence System")
+
+# -----------------------------------------------------------------------------
+# 4. Main Header
+# -----------------------------------------------------------------------------
+st.title("✈️ Tourism Purchase Prediction")
+st.markdown("##### Pre-evaluate customer lead propensity for the **Wellness Tourism Package**")
+st.write("---")
+
+# -----------------------------------------------------------------------------
+# 5. Tabbed Data Input Form
+# -----------------------------------------------------------------------------
+with st.form("prediction_form"):
+    tab1, tab2, tab3 = st.tabs([
+        "👤 Customer Demographics", 
+        "🧳 Travel & Lifestyle", 
+        "📞 Sales Interaction Details"
+    ])
+
+    # Tab 1: Customer Profile
+    with tab1:
+        st.subheader("Demographics & Income")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            age = st.slider("Age", min_value=15, max_value=65, value=30)
+            gender = st.selectbox("Gender", ["Male", "Female"])
+            marital_status = st.selectbox("Marital Status", ["Married", "Single", "Divorced"])
+        
+        with c2:
+            occupation = st.selectbox("Occupation", ["Salaried", "Small Business", "Large Business", "Free Lancer"])
+            designation = st.selectbox("Designation", ["Executive", "Manager", "Senior Manager", "AVP", "VP"])
+        
+        with c3:
+            monthly_income = st.number_input("Monthly Income ($)", min_value=0.0, value=25000.0, step=500.0)
+            city_tier = st.select_slider("City Tier", options=[1, 2, 3], value=1)
+
+    # Tab 2: Travel Profile
+    with tab2:
+        st.subheader("Travel Habits & Assets")
+        t1, t2, t3 = st.columns(3)
+        with t1:
+            num_trips = st.number_input("Annual Trips Taken", min_value=0, max_value=20, value=3)
+            preferred_star = st.radio("Preferred Hotel Rating", [3, 4, 5], horizontal=True)
+            
+        with t2:
+            num_visitors = st.number_input("Total Visitors in Group", min_value=1, max_value=10, value=2)
+            num_children = st.number_input("Children Visiting (< 5 yrs)", min_value=0, max_value=5, value=0)
+
+        with t3:
+            passport = st.segmented_control("Has Passport?", ["No", "Yes"], default="Yes")
+            own_car = st.segmented_control("Owns a Car?", ["No", "Yes"], default="Yes")
+
+    # Tab 3: Sales Pitch Info
+    with tab3:
+        st.subheader("Interaction Parameters")
+        s1, s2, s3 = st.columns(3)
+        with s1:
+            contact_type = st.selectbox("Type of Contact", ["Self Enquiry", "Company Invited"])
+            product_pitched = st.selectbox("Product Pitched", ["Basic", "Deluxe", "Standard", "Super Deluxe", "King"])
+
+        with s2:
+            pitch_duration = st.slider("Pitch Duration (Minutes)", min_value=0, max_value=120, value=15)
+            pitch_satisfaction = st.select_slider("Pitch Satisfaction Score", options=[1, 2, 3, 4, 5], value=3)
+
+        with s3:
+            num_followups = st.selectbox("Number of Follow-ups Made", [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], index=3)
+
+    st.write("---")
+    submit_button = st.form_submit_button("⚡ Run Purchase Prediction", use_container_width=True, type="primary")
+
+# -----------------------------------------------------------------------------
+# 6. Prediction Logic & Visual Results
+# -----------------------------------------------------------------------------
+if submit_button:
+    # Value conversions
+    passport_val = 1 if passport == "Yes" else 0
+    own_car_val = 1 if own_car == "Yes" else 0
+
+    input_data = pd.DataFrame(
+        [
+            {
+                "Age": age,
+                "TypeofContact": contact_type,
+                "CityTier": city_tier,
+                "Occupation": occupation,
+                "Gender": gender,
+                "NumberOfPersonVisiting": num_visitors,
+                "PreferredPropertyStar": preferred_star,
+                "MaritalStatus": marital_status,
+                "NumberOfTrips": num_trips,
+                "Passport": passport_val,
+                "OwnCar": own_car_val,
+                "NumberOfChildrenVisiting": num_children,
+                "Designation": designation,
+                "MonthlyIncome": monthly_income,
+                "PitchSatisfactionScore": pitch_satisfaction,
+                "ProductPitched": product_pitched,
+                "NumberOfFollowups": num_followups,
+                "DurationOfPitch": pitch_duration,
+            }
+        ]
+    )
+
+    st.markdown("### 📊 Assessment Summary")
+    
+    # Process prediction
+    prediction = model.predict(input_data)[0]
+    
+    # Calculate probability if available in pipeline
+    has_proba = hasattr(model, "predict_proba")
+    proba = model.predict_proba(input_data)[0][1] if has_proba else None
+
+    r1, r2 = st.columns([1, 2])
+
+    with r1:
+        if prediction == 1:
+            st.success("🎉 **HIGH PROPENSITY LEAD**")
+            if proba is not None:
+                st.metric(label="Purchase Probability", value=f"{proba * 100:.1f}%", delta="High Potential")
+        else:
+            st.error("⚠️ **LOW PROPENSITY LEAD**")
+            if proba is not None:
+                st.metric(label="Purchase Probability", value=f"{proba * 100:.1f}%", delta="-Low Potential", delta_color="inverse")
+
+    with r2:
+        if prediction == 1:
+            st.balloons()
+            st.markdown(
+                """
+                > **Recommended Action:** Priority lead. Assign a senior account executive and send custom package highlights within 2 hours.
+                """
+            )
+            if proba is not None:
+                st.progress(float(proba), text="Model Confidence Gauge")
+        else:
+            st.markdown(
+                """
+                > **Recommended Action:** Standard lead nurture workflow. Send automated promotional email sequence rather than immediate direct sales calls.
+                """
+            )
+            if proba is not None:
+                st.progress(float(proba), text="Model Confidence Gauge")
